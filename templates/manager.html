@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+    <!-- Header -->
+    <header class="bg-white border-b px-8 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800">Management Panel</h1>
+            <p class="text-xs text-slate-400">Inventory control, financials, and logs</p>
+        </div>
+        <button onclick="fetchAnalytics()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+            Refresh Analytics
+        </button>
+    </header>
+
+    <!-- Content Grid -->
+    <main class="max-w-7xl mx-auto p-6 space-y-8">
+        <!-- Section 1: Financial Dashboard metrics -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Today's Revenue</span>
+                <h3 class="text-3xl font-black text-amber-600 mt-2" id="stat-revenue">$0.00</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+                <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Completed Transactions</span>
+                <h3 class="text-3xl font-black text-slate-800 mt-2" id="stat-count">0</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <span class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2 block">Top Selling Items</span>
+                <ol id="stat-top-items" class="text-sm list-decimal list-inside space-y-1 text-slate-600">
+                    <li>No items logged yet</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Main Workspace split -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Col 1: Menu Inventory manager -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 class="text-lg font-bold mb-4 border-b pb-2">Modify Menu Items & Pricing</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-slate-400 border-b">
+                                <th class="py-2">Item Name</th>
+                                <th class="py-2">Category</th>
+                                <th class="py-2">Price</th>
+                                <th class="py-2">Available</th>
+                                <th class="py-2 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menu-management-table" class="text-sm divide-y">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Col 2: Total Transaction Log -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 class="text-lg font-bold mb-4 border-b pb-2">Consolidated Orders Record</h2>
+                <div class="space-y-3 overflow-y-auto max-h-[500px]" id="orders-record-log">
+                    <!-- Log entries -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Receipts Printer Modal -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-xl max-w-sm w-full font-mono shadow-2xl relative">
+            <button onclick="toggleReceiptModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <div id="receipt-payload" class="space-y-4">
+                <!-- Voucher output -->
+            </div>
+            <button onclick="window.print()" class="w-full mt-6 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded-lg text-sm print:hidden">
+                Print Receipt Document
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        const API_BASE = "http://localhost:8000/api/v1";
+
+        // Fetch Analytics
+        async function fetchAnalytics() {
+            try {
+                const response = await fetch(`${API_BASE}/manager/analytics/daily`);
+                const data = await response.json();
+                
+                document.getElementById('stat-revenue').innerText = `$${data.total_revenue.toFixed(2)}`;
+                document.getElementById('stat-count').innerText = data.total_orders_completed;
+                
+                const list = document.getElementById('stat-top-items');
+                list.innerHTML = "";
+                if (data.top_selling_items.length === 0) {
+                    list.innerHTML = "<li>No sales recorded yet</li>";
+                } else {
+                    data.top_selling_items.forEach(item => {
+                        list.innerHTML += `<li>${item.name} (${item.sold_qty} sold)</li>`;
+                    });
+                }
+            } catch (err) {
+                console.error("Could not fetch analytical statistics.");
+            }
+        }
+
+        // Fetch Menu List
+        async function fetchMenuTable() {
+            try {
+                const response = await fetch(`${API_BASE}/menu/`);
+                const items = await response.json();
+                
+                const tbody = document.getElementById("menu-management-table");
+                tbody.innerHTML = "";
+                items.forEach(item => {
+                    const tr = document.createElement("tr");
+                    tr.className = "hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="py-3 font-semibold text-slate-800">${item.name}</td>
+                        <td class="py-3 text-slate-500">${item.category}</td>
+                        <td class="py-3 font-medium">$${item.price.toFixed(2)}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-xs ${item.is_available ? 'bg-green-100 text-green-800':'bg-red-100 text-red-800'}">
+                                ${item.is_available ? 'Active' : 'Sold Out'}
+                            </span>
+                        </td>
+                        <td class="py-3 text-right">
+                            <button onclick="editPrice(${item.id}, ${item.price}, ${item.is_available})" class="text-amber-600 hover:text-amber-800 font-bold text-xs">Edit</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Could not populate items inventory.");
+            }
+        }
+
+        // Change price prompt
+        async function editPrice(id, currentPrice, currentAvailability) {
+            const newPriceStr = prompt("Set item price (Float amount):", currentPrice);
+            if (newPriceStr === null) return;
+            const newPrice = parseFloat(newPriceStr);
+
+            const activeInput = confirm("Is this item active in stock? Click OK for Yes, Cancel for No.");
+
+            if (!isNaN(newPrice) && newPrice > 0) {
+                try {
+                    const response = await fetch(`${API_BASE}/manager/menu/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            price: newPrice,
+                            is_available: activeInput
+                        })
+                    });
+                    if (response.ok) {
+                        fetchMenuTable();
+                    } else {
+                        alert("Error updating item settings.");
+                    }
+                } catch (err) {
+                    alert("Network configuration issue occurred.");
+                }
+            } else {
+                alert("Invalid numerical formatting input.");
+            }
+        }
+
+        // Fetch All Orders Record
+        async function fetchOrdersLog() {
+            try {
+                const response = await fetch(`${API_BASE}/manager/orders`);
+                const orders = await response.json();
+                
+                const container = document.getElementById("orders-record-log");
+                container.innerHTML = "";
+
+                orders.forEach(order => {
+                    const card = document.createElement("div");
+                    card.className = "bg-white p-4 border border-slate-100 rounded-xl shadow-sm flex justify-between items-center";
+                    card.innerHTML = `
+                        <div>
+                            <p class="font-bold text-slate-800">Order ID #${order.id} - Table ${order.table.number}</p>
+                            <p class="text-xs text-slate-400">Total: $${order.total_price.toFixed(2)} | Status: <span class="capitalize font-semibold text-amber-600">${order.status}</span></p>
+                        </div>
+                        <button onclick="loadReceipt(${order.id})" class="text-xs border border-slate-300 hover:bg-slate-50 py-1.5 px-3 rounded-lg font-bold transition">Receipt</button>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Error retrieving historical logs.");
+            }
+        }
+
+        // Render receipts
+        async function loadReceipt(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/manager/orders/${orderId}/voucher`);
+                const receipt = await response.json();
+
+                const receiptContainer = document.getElementById("receipt-payload");
+                
+                const itemsStr = receipt.items.map(i => `
+                    <div class="flex justify-between text-xs border-b border-dashed pb-1">
+                        <span>${i.name} (x${i.quantity})</span>
+                        <span>$${i.subtotal.toFixed(2)}</span>
+                    </div>
+                `).join("");
+
+                receiptContainer.innerHTML = `
+                    <div class="text-center border-b pb-3 border-dashed">
+                        <h2 class="text-lg font-bold">${receipt.restaurant_name}</h2>
+                        <p class="text-[10px] text-slate-400">Transaction ID: ${receipt.voucher_id}</p>
+                        <p class="text-[10px] text-slate-400">${receipt.timestamp}</p>
+                    </div>
+                    <div class="text-xs">
+                        <p><b>Table:</b> ${receipt.table_number}</p>
+                    </div>
+                    <div class="space-y-1 my-3">
+                        ${itemsStr}
+                    </div>
+                    <div class="space-y-1 pt-3 border-t border-dashed text-xs text-slate-600">
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>$${receipt.subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tax (10%)</span>
+                            <span>$${receipt.tax_amount.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-slate-800 border-t pt-2 border-dashed">
+                            <span>Grand Total</span>
+                            <span>$${receipt.grand_total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+
+                toggleReceiptModal(true);
+            } catch (err) {
+                alert("Receipt compilation failed.");
+            }
+        }
+
+        function toggleReceiptModal(show) {
+            const modal = document.getElementById('receipt-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        // Init loads
+        fetchAnalytics();
+        fetchMenuTable();
+        fetchOrdersLog();
+    </script>
+</body>
+</html>

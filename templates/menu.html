@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bistro QR - Coffee Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Import chalk-style Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gochi+Hand&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Wood/Chalkboard overall background theme */
+        body {
+            background-color: #12100e;
+            background-image: radial-gradient(circle at center, #23201c 0%, #0d0b0a 100%);
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom chalk-font utilities */
+        .font-chalk {
+            font-family: 'Architects Daughter', cursive;
+        }
+        .font-cursive {
+            font-family: 'Gochi Hand', cursive;
+        }
+        /* Custom scrollbar to match dark theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1c1a17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #443e38;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-stone-200 min-h-screen pb-24 relative selection:bg-amber-500/30">
+
+    <!-- Subtle framing border to replicate the wooden board edge in the image -->
+    <div class="fixed inset-4 border border-stone-800/60 pointer-events-none rounded-2xl z-40 hidden md:block"></div>
+
+    <!-- Header / Branding -->
+    <header class="max-w-6xl mx-auto px-6 pt-10 pb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-6 relative z-10">
+        <div>
+            <!-- Styled like the logo in top right of the reference image -->
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs uppercase tracking-widest text-amber-500/80 font-bold">Est. 2026</span>
+                <span class="h-1 w-8 bg-stone-700"></span>
+            </div>
+            <h1 class="text-5xl md:text-6xl font-chalk font-black tracking-tight text-white select-none">
+               Lin COFFEE <span class="text-yellow-400">MENU</span>
+            </h1>
+        </div>
+
+        <!-- Table Selector with custom styled dropdown -->
+        <div class="flex items-center gap-3 bg-stone-900/80 border border-stone-800 backdrop-blur-md px-4 py-2.5 rounded-xl self-start">
+            <span class="text-xs font-semibold uppercase text-stone-400 tracking-wider">Your Table:</span>
+            <select id="table-select" class="bg-transparent text-yellow-400 font-chalk text-lg focus:outline-none cursor-pointer">
+                <option value="1" class="bg-stone-900 text-stone-200">Table 1</option>
+                <option value="2" class="bg-stone-900 text-stone-200">Table 2</option>
+                <option value="3" class="bg-stone-900 text-stone-200">Table 3</option>
+                <option value="4" class="bg-stone-900 text-stone-200">Table 4</option>
+                <option value="5" class="bg-stone-900 text-stone-200">Table 5</option>
+                <option value="6" class="bg-stone-900 text-stone-200">Table 6</option>
+                <option value="7" class="bg-stone-900 text-stone-200">Table 7</option>
+                <option value="8" class="bg-stone-900 text-stone-200">Table 8</option>
+                <option value="9" class="bg-stone-900 text-stone-200">Table 9</option>
+                <option value="10" class="bg-stone-900 text-stone-200">Table 10</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Main Menu Board Grid -->
+    <main class="max-w-6xl mx-auto px-6 relative z-10">
+        <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mt-4">
+            <!-- Dynamic Category Columns Rendered Here -->
+            <div class="col-span-full text-center py-24">
+                <p class="font-chalk text-2xl text-stone-400 animate-pulse">Wiping the chalkboard...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sticky Cart Bar -->
+    <div id="cart-bar" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-lg bg-stone-900/90 border border-stone-800/80 backdrop-blur-lg p-4 shadow-2xl rounded-2xl flex justify-between items-center z-50 hidden transition-all duration-300">
+        <div>
+            <p class="text-[10px] uppercase tracking-wider text-stone-500 font-semibold">Ready to order</p>
+            <p class="text-2xl font-bold text-yellow-400 font-chalk" id="cart-total">$0.00</p>
+        </div>
+        <button onclick="toggleCartModal(true)" class="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-stone-950 font-bold py-2.5 px-6 rounded-xl transition duration-300 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+            View Cart (<span id="cart-count">0</span>)
+        </button>
+    </div>
+
+    <!-- Cart Modal (Checkout) -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/75 z-50 flex items-end md:items-center justify-center hidden p-0 md:p-4 transition-all duration-300">
+        <div class="bg-stone-950 border border-stone-800/80 w-full max-w-md p-6 space-y-5 rounded-t-3xl md:rounded-2xl shadow-2xl">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-3">
+                <h3 class="text-xl font-chalk text-white">Review Order</h3>
+                <button onclick="toggleCartModal(false)" class="text-stone-400 hover:text-white text-2xl font-bold transition">&times;</button>
+            </div>
+            
+            <div id="cart-items" class="max-h-60 overflow-y-auto space-y-4">
+                <!-- Selected items render dynamically -->
+            </div>
+
+            <div class="border-t border-stone-800 pt-4 space-y-2">
+                <div class="flex justify-between text-lg font-bold">
+                    <span class="font-chalk text-stone-400">Subtotal</span>
+                    <span id="modal-total" class="font-chalk text-yellow-400">$0.00</span>
+                </div>
+            </div>
+
+            <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                Place Order
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const API_BASE = "http://localhost:8000/api/v1";
+        let menuItems = [];
+        let cart = {};
+
+        // Fetch Menu from API
+        async function fetchMenu() {
+            try {
+                const response = await fetch(`${API_BASE}/menu/`);
+                menuItems = await response.json();
+                renderMenu();
+            } catch (err) {
+                document.getElementById('menu-grid').innerHTML = `
+                    <div class="col-span-full text-center py-24">
+                        <p class="text-red-400 font-chalk text-xl">Failed to retrieve menu. Please verify backend is running.</p>
+                    </div>`;
+            }
+        }
+
+        // Render Menu Categorized with chalkboard layout
+        function renderMenu() {
+            const container = document.getElementById('menu-grid');
+            container.innerHTML = "";
+            
+            // Group backend items by category
+            const categories = {};
+            menuItems.forEach(item => {
+                const catLower = item.category.toLowerCase();
+                if (!categories[catLower]) categories[catLower] = [];
+                categories[catLower].push(item);
+            });
+
+            // Iterate over categories
+            for (const [category, items] of Object.entries(categories)) {
+                const categorySection = document.createElement('section');
+                categorySection.className = "space-y-6";
+
+                // Chalk-drawn visual line underline effect
+                categorySection.innerHTML = `
+                    <div class="mb-4">
+                        <h2 class="text-3xl font-cursive text-white tracking-wide lowercase inline-block">${category}</h2>
+                        <svg class="w-32 h-2 text-stone-600 mt-1" viewBox="0 0 100 10" preserveAspectRatio="none">
+                            <path d="M0,5 Q50,9 100,5" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <path d="M5,8 Q45,3 95,8" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/>
+                        </svg>
+                    </div>
+                    <div class="space-y-5" id="cat-items-${category}"></div>
+                `;
+
+                container.appendChild(categorySection);
+                const itemsContainer = document.getElementById(`cat-items-${category}`);
+
+                items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = "group flex flex-col justify-between py-1 transition-all duration-300";
+                    itemDiv.innerHTML = `
+                        <div class="flex items-baseline justify-between gap-2">
+                            <span class="font-chalk text-xl text-stone-100 group-hover:text-yellow-200 transition-colors duration-300">
+                                ${item.name}
+                            </span>
+                            <span class="flex-grow border-b border-dotted border-stone-800 mx-2 self-end mb-1"></span>
+                            <span class="font-chalk text-lg text-yellow-400">$${item.price.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <p class="text-xs text-stone-500 font-normal pr-4 max-w-[70%]">
+                                ${item.description || 'Chalk-fresh original recipe item.'}
+                            </p>
+                            <!-- Beautiful glowing order button -->
+                            <div class="flex items-center" id="btn-container-${item.id}">
+                                <button onclick="updateCartCount(${item.id}, 1)" 
+                                        class="px-3 py-1 rounded-full border border-yellow-500/30 hover:border-yellow-400 text-yellow-500 hover:text-yellow-400 text-xs font-semibold transition-all duration-300 hover:shadow-[0_0_10px_rgba(234,179,8,0.2)] bg-yellow-500/5 hover:bg-yellow-500/10">
+                                    + Add
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    itemsContainer.appendChild(itemDiv);
+                });
+            }
+        }
+
+        // Cart Operations
+        function updateCartCount(id, change) {
+            if (!cart[id]) cart[id] = 0;
+            cart[id] += change;
+
+            if (cart[id] <= 0) delete cart[id];
+
+            updateItemButton(id);
+            updateCartSummary();
+        }
+
+        // Dynamically transition button into a gorgeous, sleek counter pill once clicked
+        function updateItemButton(id) {
+            const btnContainer = document.getElementById(`btn-container-${id}`);
+            if (!btnContainer) return;
+
+            const qty = cart[id] || 0;
+
+            if (qty > 0) {
+                btnContainer.innerHTML = `
+                    <div class="flex items-center gap-2 bg-stone-900 border border-yellow-500/30 rounded-full px-2 py-1 shadow-[0_0_10px_rgba(234,179,8,0.1)] transition-all duration-300">
+                        <button onclick="updateCartCount(${id}, -1)" class="w-5 h-5 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white flex items-center justify-center font-bold text-xs transition">-</button>
+                        <span class="text-xs font-chalk font-bold text-yellow-400 px-1">${qty}</span>
+                        <button onclick="updateCartCount(${id}, 1)" class="w-5 h-5 rounded-full bg-yellow-500/20 hover:bg-yellow-500 text-yellow-400 hover:text-stone-950 flex items-center justify-center font-bold text-xs transition">+</button>
+                    </div>
+                `;
+            } else {
+                btnContainer.innerHTML = `
+                    <button onclick="updateCartCount(${id}, 1)" 
+                            class="px-3 py-1 rounded-full border border-yellow-500/30 hover:border-yellow-400 text-yellow-500 hover:text-yellow-400 text-xs font-semibold transition-all duration-300 hover:shadow-[0_0_10px_rgba(234,179,8,0.2)] bg-yellow-500/5 hover:bg-yellow-500/10">
+                        + Add
+                    </button>
+                `;
+            }
+        }
+
+        function updateCartSummary() {
+            let total = 0;
+            let count = 0;
+
+            for (const [id, qty] of Object.entries(cart)) {
+                const item = menuItems.find(i => i.id == id);
+                if (item) {
+                    total += item.price * qty;
+                    count += qty;
+                }
+            }
+
+            const cartBar = document.getElementById('cart-bar');
+            if (count > 0) {
+                cartBar.classList.remove('hidden');
+                document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+                document.getElementById('cart-count').innerText = count;
+            } else {
+                cartBar.classList.add('hidden');
+            }
+        }
+
+        function toggleCartModal(show) {
+            const modal = document.getElementById('cart-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                renderCartModalItems();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function renderCartModalItems() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = "";
+            let total = 0;
+
+            for (const [id, qty] of Object.entries(cart)) {
+                const item = menuItems.find(i => i.id == id);
+                if (item) {
+                    total += item.price * qty;
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center py-2 border-b border-stone-900 text-sm";
+                    div.innerHTML = `
+                        <div>
+                            <p class="font-chalk text-base text-white">${item.name}</p>
+                            <p class="text-xs text-stone-500">$${item.price.toFixed(2)} x ${qty}</p>
+                        </div>
+                        <span class="font-chalk text-yellow-400 text-base">$${(item.price * qty).toFixed(2)}</span>
+                    `;
+                    container.appendChild(div);
+                }
+            }
+            document.getElementById('modal-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        // Place Order
+        async function submitOrder() {
+            const tableId = document.getElementById('table-select').value;
+            const itemsPayload = Object.entries(cart).map(([id, qty]) => ({
+                menu_item_id: parseInt(id),
+                quantity: qty,
+                notes: ""
+            }));
+
+            if (itemsPayload.length === 0) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/menu/order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table_id: parseInt(tableId),
+                        items: itemsPayload
+                    })
+                });
+
+                if (response.ok) {
+                    alert("Order successfully sent to the kitchen!");
+                    cart = {};
+                    updateCartSummary();
+                    toggleCartModal(false);
+                    // Reset UI buttons
+                    menuItems.forEach(item => updateItemButton(item.id));
+                } else {
+                    alert("There was an error submitting your order.");
+                }
+            } catch (err) {
+                alert("Network error. Please try again.");
+            }
+        }
+
+        // Initialize Page
+        fetchMenu();
+    </script>
+</body>
+</html>
