@@ -60,8 +60,9 @@
 
     <!-- JavaScript Logic -->
     <script>
-        const API_BASE = "http://localhost:8000/api/v1";
-        const WS_URL = "ws://localhost:8000/api/v1/kitchen/ws";
+        const API_BASE = `${window.location.origin}/api/v1`;
+        const WS_PROTOCOL = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const WS_URL = `${WS_PROTOCOL}//${window.location.host}/api/v1/kitchen/ws`;
 
         // Fetch API active lists
         async function fetchOrders() {

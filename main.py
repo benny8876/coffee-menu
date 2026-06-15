@@ -1,8 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI 
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import models
 from database import engine, SessionLocal
 from routers import menu, kitchen, manager
+import os 
+
+
+
 
 # Autocreate schema tables for SQLite local database
 models.Base.metadata.create_all(bind=engine)
@@ -54,5 +59,22 @@ def seed_initial_data():
     db.close()
 
 @app.get("/")
-def root():
-    return {"message": "Welcome to QR Dining API. Visit /docs for the Swagger UI."}
+def serve_menu():
+    file_path = os.path.join("templates", "menu.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    return {"error": "menu.html not found in static folder"}
+
+@app.get("/kitchen")
+def serve_kitchen():
+    file_path = os.path.join("templates", "kitchen.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    return {"error": "kitchen.html not found in static folder"}
+
+@app.get("/manager")
+def serve_manager():
+    file_path = os.path.join("templates", "manager.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    return {"error": "manager.html not found in static folder"}
