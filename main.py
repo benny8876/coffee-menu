@@ -58,7 +58,12 @@ def seed_initial_data():
     db.commit()
     db.close()
 
+
 @app.get("/")
+def maim():
+    return {"Detial" : "Welcome To my menu "}
+
+@app.get("/menu")
 def serve_menu():
     file_path = os.path.join("templates", "menu.html")
     if os.path.exists(file_path):
