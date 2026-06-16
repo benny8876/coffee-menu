@@ -8,14 +8,24 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
     <!-- Header -->
-    <header class="bg-white border-b px-8 py-4 flex justify-between items-center">
+    <header class="bg-white border-b px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-2xl font-black text-slate-800">Management Panel</h1>
             <p class="text-xs text-slate-400">Inventory control, financials, and logs</p>
         </div>
-        <button onclick="fetchAnalytics()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
-            Refresh Analytics
-        </button>
+        <!-- Date Selector & Action Tools -->
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-lg border">
+                <span class="text-xs font-bold text-slate-400 uppercase pl-2">Filter Date:</span>
+                <input type="date" id="analytics-date" onchange="fetchAnalytics()" class="bg-transparent border-none text-sm font-bold focus:outline-none outline-none cursor-pointer">
+            </div>
+            <button onclick="exportReport()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+                Export to Excel
+            </button>
+            <button onclick="toggleAddModal(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+                + Add Menu Item
+            </button>
+        </div>
     </header>
 
     <!-- Content Grid -->
@@ -23,7 +33,7 @@
         <!-- Section 1: Financial Dashboard metrics -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
-                <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Today's Revenue</span>
+                <span class="text-xs text-slate-400 uppercase font-bold tracking-wider" id="revenue-title">Selected Day's Revenue</span>
                 <h3 class="text-3xl font-black text-amber-600 mt-2" id="stat-revenue">$0.00</h3>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
@@ -71,6 +81,73 @@
         </div>
     </main>
 
+    <!-- Add Menu Item Modal -->
+    <div id="add-item-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl relative space-y-4">
+            <button onclick="toggleAddModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-slate-800">Add New Menu Item</h3>
+            <form id="add-item-form" onsubmit="submitAddItem(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Item Name</label>
+                    <input type="text" id="add-item-name" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Category</label>
+                        <input type="text" id="add-item-category" placeholder="Appetizer, Main, Drink" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Price ($)</label>
+                        <input type="number" step="0.01" min="0.01" id="add-item-price" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
+                    <textarea id="add-item-desc" rows="2" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition">
+                    Save to Database
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Menu Item Modal -->
+    <div id="edit-item-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl relative space-y-4">
+            <button onclick="toggleEditModal(false)" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            <h3 class="text-lg font-bold text-slate-800">Edit Menu Item</h3>
+            <form id="edit-item-form" onsubmit="submitEditItem(event)" class="space-y-4">
+                <input type="hidden" id="edit-item-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Item Name</label>
+                    <input type="text" id="edit-item-name" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Category</label>
+                        <input type="text" id="edit-item-category" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Price ($)</label>
+                        <input type="number" step="0.01" min="0.01" id="edit-item-price" required class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Description</label>
+                    <textarea id="edit-item-desc" rows="2" class="w-full bg-slate-100 border-none rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
+                </div>
+                <div class="flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="edit-item-available" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                    <label for="edit-item-available" class="text-sm font-semibold text-slate-600">Mark as available / in stock</label>
+                </div>
+                <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-sm transition">
+                    Apply Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Receipts Printer Modal -->
     <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
         <div class="bg-white p-8 rounded-xl max-w-sm w-full font-mono shadow-2xl relative">
@@ -86,12 +163,24 @@
 
     <!-- JavaScript logic -->
     <script>
-        const API_BASE = "/api/v1";
+        const API_BASE = `${window.location.origin}/api/v1`;
+        let menuItemsList = [];
 
-        // Fetch Analytics
+        // Set Default Date in Picker Input to Today's local date (YYYY-MM-DD)
+        function setDefaultDatePicker() {
+            const todayLocal = new Date().toLocaleDateString('en-CA'); // Outputs 'YYYY-MM-DD' safely
+            document.getElementById('analytics-date').value = todayLocal;
+        }
+
+        // Fetch Analytics for Selected Date
         async function fetchAnalytics() {
+            const selectedDate = document.getElementById('analytics-date').value;
+            
+            // UI helper labels
+            document.getElementById('revenue-title').innerText = `${selectedDate} Revenue`;
+
             try {
-                const response = await fetch(`${API_BASE}/manager/analytics/daily`);
+                const response = await fetch(`${API_BASE}/manager/analytics/daily?date=${selectedDate}`);
                 const data = await response.json();
                 
                 document.getElementById('stat-revenue').innerText = `$${data.total_revenue.toFixed(2)}`;
@@ -100,26 +189,33 @@
                 const list = document.getElementById('stat-top-items');
                 list.innerHTML = "";
                 if (data.top_selling_items.length === 0) {
-                    list.innerHTML = "<li>No sales recorded yet</li>";
+                    list.innerHTML = "<li>No sales recorded on this date</li>";
                 } else {
                     data.top_selling_items.forEach(item => {
                         list.innerHTML += `<li>${item.name} (${item.sold_qty} sold)</li>`;
                     });
                 }
             } catch (err) {
-                console.error("Could not fetch analytical statistics.");
+                console.error("Could not fetch daily analytical metrics.");
             }
+        }
+
+        // Trigger Excel (CSV) Download for Selected Date
+        function exportReport() {
+            const selectedDate = document.getElementById('analytics-date').value;
+            // Native file download redirection
+            window.location.href = `${API_BASE}/manager/analytics/export?date=${selectedDate}`;
         }
 
         // Fetch Menu List
         async function fetchMenuTable() {
             try {
                 const response = await fetch(`${API_BASE}/menu/`);
-                const items = await response.json();
+                menuItemsList = await response.json();
                 
                 const tbody = document.getElementById("menu-management-table");
                 tbody.innerHTML = "";
-                items.forEach(item => {
+                menuItemsList.forEach(item => {
                     const tr = document.createElement("tr");
                     tr.className = "hover:bg-slate-50";
                     tr.innerHTML = `
@@ -132,7 +228,7 @@
                             </span>
                         </td>
                         <td class="py-3 text-right">
-                            <button onclick="editPrice(${item.id}, ${item.price}, ${item.is_available})" class="text-amber-600 hover:text-amber-800 font-bold text-xs">Edit</button>
+                            <button onclick="openEditModal(${item.id})" class="text-amber-600 hover:text-amber-800 font-bold text-xs">Edit</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -142,34 +238,86 @@
             }
         }
 
-        // Change price prompt
-        async function editPrice(id, currentPrice, currentAvailability) {
-            const newPriceStr = prompt("Set item price (Float amount):", currentPrice);
-            if (newPriceStr === null) return;
-            const newPrice = parseFloat(newPriceStr);
+        // Add Menu Item Operations
+        function toggleAddModal(show) {
+            const modal = document.getElementById('add-item-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
 
-            const activeInput = confirm("Is this item active in stock? Click OK for Yes, Cancel for No.");
+        async function submitAddItem(event) {
+            event.preventDefault();
+            const name = document.getElementById('add-item-name').value;
+            const category = document.getElementById('add-item-category').value;
+            const price = parseFloat(document.getElementById('add-item-price').value);
+            const description = document.getElementById('add-item-desc').value;
 
-            if (!isNaN(newPrice) && newPrice > 0) {
-                try {
-                    const response = await fetch(`${API_BASE}/manager/menu/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            price: newPrice,
-                            is_available: activeInput
-                        })
-                    });
-                    if (response.ok) {
-                        fetchMenuTable();
-                    } else {
-                        alert("Error updating item settings.");
-                    }
-                } catch (err) {
-                    alert("Network configuration issue occurred.");
+            const payload = { name, category, price, description, is_available: true };
+
+            try {
+                const response = await fetch(`${API_BASE}/manager/menu`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    toggleAddModal(false);
+                    document.getElementById('add-item-form').reset();
+                    fetchMenuTable();
+                } else {
+                    alert("Error adding menu item.");
                 }
-            } else {
-                alert("Invalid numerical formatting input.");
+            } catch (err) {
+                alert("Network error.");
+            }
+        }
+
+        // Edit Menu Item Operations
+        function toggleEditModal(show) {
+            const modal = document.getElementById('edit-item-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function openEditModal(itemId) {
+            const item = menuItemsList.find(i => i.id === itemId);
+            if (!item) return;
+
+            document.getElementById('edit-item-id').value = item.id;
+            document.getElementById('edit-item-name').value = item.name;
+            document.getElementById('edit-item-category').value = item.category;
+            document.getElementById('edit-item-price').value = item.price;
+            document.getElementById('edit-item-desc').value = item.description || '';
+            document.getElementById('edit-item-available').checked = item.is_available;
+
+            toggleEditModal(true);
+        }
+
+        async function submitEditItem(event) {
+            event.preventDefault();
+            const id = document.getElementById('edit-item-id').value;
+            const name = document.getElementById('edit-item-name').value;
+            const category = document.getElementById('edit-item-category').value;
+            const price = parseFloat(document.getElementById('edit-item-price').value);
+            const description = document.getElementById('edit-item-desc').value;
+            const is_available = document.getElementById('edit-item-available').checked;
+
+            const payload = { name, category, price, description, is_available };
+
+            try {
+                const response = await fetch(`${API_BASE}/manager/menu/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    toggleEditModal(false);
+                    fetchMenuTable();
+                } else {
+                    alert("Error updating menu item.");
+                }
+            } catch (err) {
+                alert("Network error.");
             }
         }
 
@@ -254,7 +402,8 @@
             else modal.classList.add('hidden');
         }
 
-        // Init loads
+        // Initialize script configurations
+        setDefaultDatePicker();
         fetchAnalytics();
         fetchMenuTable();
         fetchOrdersLog();
